@@ -24,17 +24,19 @@ function uploadFiles(file, fileName) {
 }
 
 function getFiles() {
+	clearFiles();
 	let fileStorage = document.getElementById('fileStorage');
 	fileStorage.setAttribute('id', "fileStorage");
 	firebase
 		.storage()
 		.ref()
 		.listAll().then( 
-			function (list) {
+			(list) => {
 				for (i in list.items) {
 					let fileItem = document.createElement('div'),
 						iconRemove = document.createElement('span'),
 						iconDownload = document.createElement('i'),
+						iconOpen = document.createElement('span'),
 						path = list.items[i].location.path_;
 
 					iconRemove.innerText = 'delete';
@@ -49,12 +51,19 @@ function getFiles() {
 					iconDownload.style.color = "green";
 					iconDownload.setAttribute('onclick', "downloadFile(this)");
 
+					iconOpen.innerText = 'open_in_new';
+					iconOpen.classList.add('material-icons');
+					iconOpen.classList.add('icons');
+					iconOpen.style.color = "blue";
+					iconOpen.setAttribute('onclick', "readFile(this)");
+
 					fileItem.innerText = path;
 					fileItem.setAttribute('id', path);
 
 					fileStorage.append(fileItem);
 					fileItem.append(iconRemove);
 					fileItem.append(iconDownload);
+					fileItem.append(iconOpen);
 
 					// loader
 				}
@@ -76,58 +85,39 @@ function removeFile(obj) {
 		.delete().then(
 			function() {
 			  	console.log('successfully');
+			  	getFiles();
 			}).catch(function(error) {
 				console.log(error);
 			});
 }	
 
 function downloadFile(obj) {
-	let id = obj.parentNode.id;
+	let path = obj.parentNode.id,
+		link = document.createElement("a");
 	firebase
 		.storage()
 		.ref()
-		.child(id)
-		.getDownloadURL().then(
-			function(url) {
-			  	var xhr = new XMLHttpRequest();
-				xhr.responseType = 'blob';
-				xhr.onload = function(event) {
-					var blob = xhr.response;
-				};
-				xhr.open('GET', url);
-			    xhr.setRequestHeader('Access-Control-Allow-Origin', '*');
-			    xhr.setRequestHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-				xhr.send();
-
-			}).catch(function(error) {
-				console.log(error);
-			});
+		.child(path)
+		.getDownloadURL()
+			.then(function (url) {
+			    if (link.download !== undefined) {
+			        link.setAttribute("href", url);
+			        link.setAttribute("target", "_blank");
+			        link.style.visibility = 'hidden';
+			        document.body.appendChild(link);
+			        link.click();
+			        document.body.removeChild(link);
+			    }
+			})
 }
 
-function signinGmail() {
-	var provider = new firebase.auth.GoogleAuthProvider();
-	firebase.auth().signInWithPopup(provider).then(function(result) {
-	  	var token = result.credential.accessToken;
-	  	var user = result.user;
-	  	console.log(result);
-	}).catch(function(error) {
-	  	var errorCode = error.code;
-	  	var errorMessage = error.message;
-	  	var email = error.email;
-	  	var credential = error.credential;
-	});
+function clearFiles() {
+	let fileStorage = document.getElementById("fileStorage");
+	while (fileStorage.firstChild) {
+	    fileStorage.removeChild(fileStorage.firstChild);
+	}
 }
 
-// function signinGithub() {
-// 	var provider = new firebase.auth.GithubAuthProvider();
-// 	firebase.auth().signInWithPopup(provider).then(function(result) {
-// 	  	var token = result.credential.accessToken;
-// 	  	var user = result.user;
-// 	  	console.log(result);
-// 	}).catch(function(error) {
-// 	  	var errorCode = error.code;
-// 	  	var errorMessage = error.message;
-// 	  	var email = error.email;
-// 	  	var credential = error.credential;
-// 	});
-// }
+function readFile(obj) {
+	
+}
